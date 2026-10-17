@@ -6,7 +6,7 @@ app = Flask(__name__)
 @app.route("/")
 def hello_world():
     # 首页路由：返回问候语
-    return "Hello, World!"
+    return "Hello, NEU!"
 
 
 if __name__ == "__main__":

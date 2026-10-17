@@ -18,7 +18,7 @@ class TestFlaskApp(unittest.TestCase):
         # 测试首页
         response = self.app.get("/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data.decode("utf-8"), "Hello, World!")
+        self.assertEqual(response.data.decode("utf-8"), "Hello, NEU!")
 
 
 if __name__ == "__main__":

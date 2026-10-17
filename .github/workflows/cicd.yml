@@ -1,9 +1,8 @@
 name: Deploy Flask App to Touge Server
 
 on:
-  push:
-    branches:
-      - main
+  # 已停用自动部署（头歌服务器实验已结束），仅保留手动触发
+  workflow_dispatch:
 
 env:
   # 头歌实验页面显示的 SSH 端口（环境重启后可能变化）

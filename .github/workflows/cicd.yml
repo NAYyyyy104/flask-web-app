@@ -1,0 +1,63 @@
+name: Deploy Flask App to Touge Server
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  # !!! 改成你自己头歌实验页面显示的 SSH 端口 !!!
+  SSH_PORT: "50241"
+  SSH_USER: root
+  APP_DIR: /root/flask-web-app
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies and run tests
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest==8.4.1
+          pytest tests/ -v
+
+      - name: Deploy to Touge Server via SSH
+        env:
+          TOUGE_SSH_PRIVATE_KEY: ${{ secrets.TOUGE_SSH_PRIVATE_KEY }}
+          TOUGE_SERVER_IP: ${{ secrets.TOUGE_SERVER_IP }}
+        run: |
+          # 写入私钥（printf 保留换行格式）
+          mkdir -p ~/.ssh
+          printf "%s\n" "$TOUGE_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          # 记录服务器指纹，避免交互确认
+          ssh-keyscan -p "$SSH_PORT" "$TOUGE_SERVER_IP" >> ~/.ssh/known_hosts 2>/dev/null
+
+          # 登录服务器执行部署
+          ssh -i ~/.ssh/id_rsa -p "$SSH_PORT" -o StrictHostKeyChecking=accept-new \
+            "$SSH_USER@$TOUGE_SERVER_IP" "APP_DIR=$APP_DIR bash -s" << 'EOF'
+          set -e
+          echo "已连接到服务器: $(whoami)@$(hostname)"
+          cd "$APP_DIR"
+          git pull origin main
+          pip3 install -r requirements.txt
+          supervisorctl restart flask-web-app
+          supervisorctl status flask-web-app
+          echo "部署完成"
+          EOF

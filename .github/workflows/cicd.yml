@@ -6,8 +6,8 @@ on:
       - main
 
 env:
-  # !!! 改成你自己头歌实验页面显示的 SSH 端口 !!!
-  SSH_PORT: "50241"
+  # 头歌实验页面显示的 SSH 端口（环境重启后可能变化）
+  SSH_PORT: "41588"
   SSH_USER: root
   APP_DIR: /root/flask-web-app
 
@@ -55,7 +55,13 @@ jobs:
           set -e
           echo "已连接到服务器: $(whoami)@$(hostname)"
           cd "$APP_DIR"
-          git pull origin main
+          # 服务器访问 GitHub 偶尔卡住：单次 60 秒超时，最多重试 3 次
+          for i in 1 2 3; do
+            timeout 60 git pull origin main && break
+            echo "git pull 第 $i 次失败，重试..."
+            [ "$i" = 3 ] && exit 1
+            sleep 5
+          done
           pip3 install -r requirements.txt
           supervisorctl restart flask-web-app
           supervisorctl status flask-web-app
